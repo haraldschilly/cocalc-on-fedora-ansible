@@ -1,5 +1,5 @@
 INSERT INTO public.server_settings ("name", "value") VALUES
-	 ('iframe_comm_hosts','{{cocalc_admin_email}}'),
+	 ('iframe_comm_hosts','{{cocalc_iframe_comm_hosts}}'),
 	 ('site_name', '{{cocalc_site_name}}'),
 	 ('site_description','{{cocalc_site_description}}'),
 	 ('help_email','{{cocalc_admin_email}}'),
