@@ -1,7 +1,7 @@
 belonesox.cocalc-on-fedora-ansible
 =========
 * Installs and configures a [Cocalc Hub](https://cocalc.com/)
-   * install [https://github.com/sagemathinc/cocalc Cocalc] on Fedora (FC34/FC35).
+   * install [Cocalc](https://github.com/sagemathinc/cocalc) on Fedora (FC34/FC35).
 
 Requirements
 ------------
@@ -77,7 +77,21 @@ Known problems comparing with official docker
 How to debug
 ---- 
 
-Install all this, or only packages locally and grab git version of cocacl.
+Install all this, or only packages locally 
+
+```
+ansible-playbook cocalc-local.yml 
+```
+
+```yml
+- hosts: localhost
+  gather_facts: True
+  become: yes
+  roles:
+    - role: belonesox.cocalc-on-fedora-ansible
+```
+
+Grab git version of cocacl.
 Use ``launch.json`` like that
 
 ```json
@@ -189,10 +203,10 @@ What I need to know
   * How to run project agent separately?
 
 
-
 Road Map / Ideas to implement 
 -----
 * XPRA over cocalc proxy very laggy (comparing with pure XPRA on free TCP port), absolutely unusable collaboration with text editing
+* Something wrong with Hotkeys on Firefox («CTRL-SHIFT + -», «CTRL + ;» not working)
 * Something about collaboration with coq (coq support on cocalc-notebooks)
 * Something about collaboration with lean/idris/agda
 * RISE support (may be switch to classic and run slides  will be OK)
