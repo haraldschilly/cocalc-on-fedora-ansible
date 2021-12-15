@@ -1,0 +1,22 @@
+- name: Tex Packages
+  dnf: name={{item}}
+  #async_status: jid="{{ texinstall.ansible_job_id }}"
+  async: 1000
+  poll: 0
+  register: texinstall
+  with_items:
+    - texlive-dvips
+    - texlive-xetex
+    - texlive-latex
+    - texlive-latex-bin
+    - texlive-dvisvgm
+    - texlive-dvipng
+    - texlive-ucs
+    - texlive-cyrillic
+    - texlive-lh
+    - texlive-scontents
+- async_status: jid={{ texinstall.results[0].ansible_job_id }}
+  register: texinstall_result
+  until: texinstall_result.finished
+  retries: 30
+  delay: 30

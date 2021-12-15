@@ -1,0 +1,23 @@
+[Unit]
+Description=Cocalc Hub
+Wants=local-fs.target network.target
+After=local-fs.target network.target
+
+[Install]
+WantedBy=multi-user.target
+
+[Service]
+Type=simple
+User=root
+Group=root
+WorkingDirectory=/var/www/cocalc/actual/cocalc/src/packages/hub
+;EnvironmentFile=-/etc/cocalc-hub/cocalc-hub.env
+ExecStart=/usr/bin/bash -c 'COCALC_NO_IDLE_TIMEOUT=yes PROJECTS=/var/data/cocalc/[project_id] PGUSER=smc PGHOST=127.0.0.1 npx cocalc-hub-server --mode=multi-user --all --hostname=0.0.0.0'
+KillMode=process
+LimitCORE=infinity
+LimitNOFILE=500000
+TimeoutSec=600
+Restart=on-failure
+RestartSec=15s
+PrivateTmp=true
+StandardOutput=syslog

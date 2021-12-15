@@ -1,0 +1,20 @@
+
+- dnf: name=podman-docker state=present
+
+- file:  path=/var/data/cocalc state=directory
+- file:  path=/var/data/cocalc-test-root state=directory
+- file:  path=/etc/containers/nodocker state=touch
+
+- shell: docker pull localhost:5000/cocalc-discopal
+- shell: docker container prune --force --filter "until=5m"
+
+- shell: docker run --restart=always -e COCALC_NO_IDLE_TIMEOUT=yes --name=cocalcserver -d -v /var/data/cocalc:/projects -p 9443:443 cocalc-discopal
+# - shell: docker run --restart=always -e COCALC_NO_IDLE_TIMEOUT=yes --name=cocalcserver -d -v /var/data/cocalc:/projects -p 9443:443 sagemathinc/cocalc
+  ignore_errors: True
+  failed_when: 0
+
+- firewalld: zone=public port=443/tcp permanent=true state=enabled  
+
+#- template: src=nginxh.conf dest=/etc/nginx/conf.d/calc.conf
+- template: src=nginx.conf dest=/etc/nginx/conf.d/calc.conf
+- shell: systemctl reload nginx

@@ -1,0 +1,300 @@
+- shell: umask 022
+
+- package:
+    name:
+      - certbot
+      - pandoc
+      - nginx
+      - flex
+      - bison
+      - screen
+      - readline-devel
+      - aspell
+      - poppler-utils
+      - net-tools
+      - wget
+      - git
+      - python3-pip
+      - python3-uinput    
+      - python3-paramiko  
+      - psmisc
+      - rsync
+      - tidy
+      - lynx
+      - telnet
+      - emacs
+      - subversion
+      - m4 
+      - latexmk
+      - libpq-devel
+      - automake 
+      - jq
+      - gfortran 
+      - openssl-devel
+      - ImageMagick
+      - cairo-devel
+      - graphviz
+      - octave
+      - smem
+      - python3-psycopg2
+      - postgresql-server 
+      - postgresql-contrib
+      - clang-tools-extra
+      - golang 
+      - R-formatR
+      - yasm
+      - sage
+      - sagemath
+      - sagemath-sagetex
+      - python3-yaml   
+      - python3-matplotlib  
+      - python3-ipywidgets 
+      - python3-jupyter-core
+      - sagemath-jupyter
+      - python3-metakernel
+      - python3-metakernel-python.noarch
+      - python3-nbconvert.noarch
+      - python3-nbformat.noarch
+      - python3-octave-kernel
+      - nodejs
+      - libxml2-devel
+      - libxslt-devel
+      - julia
+      - R-core-devel     
+      - zeromq-devel 
+      - curl-devel
+      - xorg-x11-server-Xvfb
+      - xsel
+      - novnc 
+      - python3-websockify
+      - curl 
+      - xpra
+      - xorg-x11-apps
+      - dbus-x11
+      - gnome-terminal
+      - vim-X11
+      - lyx 
+      - libreoffice 
+      - inkscape 
+      - gimp 
+      - firefox 
+      - texstudio 
+      - evince
+      - glx-utils
+      - xdotool
+      - xclip
+      - setxkbmap
+      - texlive-pythontex
+      - python3-yapf
+      - xterm
+      - xinput
+      - xev
+      - xwininfo
+      - xprop
+      - python3-pyxdg
+      - python3-jupyter-console
+      - python-unversioned-command
+      - coq-coqide
+      - coq-coqide-server
+    state: present
+
+
+- name: Async/nonblocking TexLive install
+  package: 
+    name: 
+      - texlive-dvips
+      - texlive-xetex
+      - texlive-latex
+      - texlive-latex-bin
+      - texlive-dvisvgm
+      - texlive-dvipng
+      - texlive-ucs
+      - texlive-cyrillic
+      - texlive-lh
+      - texlive-scontents
+  async: 1000
+  poll: 0
+  register: texinstall
+
+# debug/retry tast  
+- name: go
+  debug: msg="{{texinstall}}"
+
+
+- file: path=/var/lib/pgsql/data owner=postgres state=directory
+
+- command: "initdb -D /var/lib/pgsql/data"
+  become: true
+  become_user: postgres         
+  args:  
+    creates: "/var/lib/pgsql/data/postgresql.conf"
+
+
+- service: name=postgresql enabled=yes state=started
+
+- shell: curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf  | sh /dev/stdin -y
+
+- file: path=/usr/local/bin/lean  src=/root/.elan/toolchains/stable/bin/lean state=link
+- file: path=/usr/local/bin/jupyter src=/usr/bin/jupyter state=link
+
+- shell: "npm install --unsafe-perm -g {{item}}"
+  loop:
+    - ijavascript
+    - itypescript
+
+- shell: "{{item}} --install=global"
+  loop:
+    - ijsinstall
+    - its
+
+# Install R Jupyter Kernel package into R itself (so R kernel works), and some other packages e.g., rmarkdown which requires reticulate to use Python.
+- shell: echo "install.packages(c('repr', 'IRdisplay', 'evaluate', 'crayon', 'pbdZMQ', 'httr', 'devtools', 'uuid', 'digest', 'IRkernel', 'formatR', 'curl'), repos='https://cloud.r-project.org')" | sage -R --no-save
+- shell: echo "install.packages(c('repr', 'IRdisplay', 'evaluate', 'crayon', 'pbdZMQ', 'httr', 'devtools', 'uuid', 'digest', 'IRkernel', 'rmarkdown', 'reticulate', 'formatR'), repos='https://cloud.r-project.org')" | R --no-save
+
+- dnf: name=https://github.com/cdr/code-server/releases/download/v3.12.0/code-server-3.12.0-amd64.rpm disable_gpg_check=yes
+
+- git: 
+    repo: "{{cocalc_git_url}}"
+    dest: "{{basedir}}/{{state}}/cocalc"
+    version: "{{cocalc_git_version}}"
+    force: yes 
+    accept_hostkey: yes
+
+
+- lineinfile:
+    path: /etc/npmrc
+    state: present
+    regexp: ^python=
+    line: 'python=/usr/bin/python2.7'
+
+- pip: 
+    name:
+      - coq-jupyter
+      - dimcli
+      - galois
+
+- command: "{{item}}"
+  loop:
+    - npm install -g npm node-gyp
+    - python3 -m pip install --upgrade ./smc_pyutil/
+    - sage -pip install --upgrade ./smc_sagews/
+    # - sudo -u sage npm run make
+    - npm run make
+  args:
+    chdir: "{{basedir}}/{{state}}/cocalc/src"
+    # creates: "{{basedir}}/{{state}}/cocalc/src/packages/frontend/node_modules"
+    creates: "{{basedir}}/{{state}}/cocalc/src/packages/static/.successful-build"
+  become: true  
+
+- command: "{{item}}"
+  loop:
+    - python3 -m coq_jupyter.install
+  args:
+    chdir: "{{basedir}}/{{state}}/cocalc/src"
+
+
+- lineinfile:
+    path: /etc/bashrc
+    state: present
+    regexp: ^umask
+    line: 'umask 077'
+
+- copy: 
+    src:  ./dfiles/ 
+    dest: /
+    force: no
+
+- shell: rpm --import https://packages.microsoft.com/keys/microsoft.asc
+
+
+
+# Надо разобраться  где это.
+#- shell: "cp /usr/local/share/jupyter/kernels/ir/Rprofile.site /usr/local/sage/local/lib/R/etc/Rprofile.site"
+
+# Install IJulia kernel
+# I figured out the dierectory /opt/julia/local/share/julia by inspecting the global varaible
+# DEPOT_PATH from within a running Julia session as a normal user, and also reading julia docs:
+#    https://pkgdocs.julialang.org/v1/glossary/
+# It was *incredibly* confusing, and the dozens of discussions of this problem that one finds
+# via Google are all very wrong, incomplete, misleading, etc.  It's truly amazing how 
+# disorganized-wrt-Google information about Julia is, as compared to Node.js and Python. 
+- shell: echo 'using Pkg; Pkg.add("IJulia");' | JUPYTER=/usr/local/bin/jupyter JULIA_DEPOT_PATH=/opt/julia/local/share/julia JULIA_PKG=/opt/julia/local/share/julia julia
+
+# Also add Pluto system-wide, since we'll likely support it soon in cocalc, and also
+# Nemo and Hecke (some math software).
+- shell: echo 'using Pkg; Pkg.add("Pluto"); Pkg.add("Nemo"); Pkg.add("Hecke")' | JULIA_DEPOT_PATH=/opt/julia/local/share/julia JULIA_PKG=/opt/julia/local/share/julia julia
+
+- shell: python3 -m pip install --no-cache-dir ipyleaflet
+
+# The Jupyter kernel that gets auto-installed with some other jupyter Ubuntu packages
+# doesn't have some nice options regarding inline matplotlib (and possibly others), so
+# we delete it.
+#RUN rm -rf /usr/share/jupyter/kernels/python3
+
+- shell: ln -sf /usr/bin/pythontex /usr/bin/pythontex3
+
+# Other pip3 packages
+# NOTE: Upgrading zmq is very important, or the Ubuntu version breaks everything..
+- shell: python3 -m pip install --upgrade --no-cache-dir  pandas plotly scipy  scikit-learn seaborn bokeh zmq
+
+
+- file:  path=/var/data state=directory mode="u=rwx,g=rwx,o=rx"
+- file:  path=/var/data/cocalc state=directory mode="u=rwx,g=rwx,o=rx"
+# - shell: chown sage:sage /var/data/cocalc -R
+- file:  path=/var/data/cocalc-test-root state=directory
+
+
+- file:  path=/etc/containers state=directory
+- file:  path=/etc/containers/nodocker state=touch
+
+- firewalld: zone=public port=443/tcp permanent=true state=enabled  
+
+
+- file: path=/var/log/hub state=directory 
+
+- postgresql_user: name="superuser" password="{{postgres_smc_pass}}" role_attr_flags="CREATEDB,CREATEROLE,SUPERUSER"
+  become: yes
+  become_user: postgres
+
+- postgresql_user: name="smc" password="{{postgres_smc_pass}}" role_attr_flags="CREATEDB,CREATEROLE,SUPERUSER"
+  become: yes
+  become_user: postgres
+
+- shell: systemctl daemon-reload
+
+- service: name=cocalc-hub enabled=yes state=started
+
+- name: gogo
+  debug: msg="gogo"
+
+
+- template: src=nginx.conf dest=/etc/nginx/conf.d/calc.conf
+- service: name=nginx enabled=yes state=started
+- shell: systemctl reload nginx
+
+#Hacks, probably because of incorrect umask problems. Need to remove
+- shell: chmod -R u+rwX,go+rX,go-w /usr/local/lib
+- shell: chmod -R u+rwX,go+rX,go-w /usr/local/lib64
+- shell: chmod -R u+rwX,go+rX,go-w /usr/local/share
+
+- template: src=init-db.sql dest=/tmp/init-db.sql
+
+- postgresql_query:
+    db: smc
+    login_user: smc
+    login_password: "{{postgres_smc_pass}}"    
+    path_to_script: /tmp/init-db.sql
+
+
+- firewalld: zone=public port={{item}}/tcp permanent=true state=enabled
+  with_items:
+  - 10000
+  - 8888
+
+
+- name: Catching Async TexLive install
+  async_status: "jid={{ texinstall.ansible_job_id }}"
+  register: texinstall_result
+  until: texinstall_result.finished
+  retries: 30
+  delay: 30

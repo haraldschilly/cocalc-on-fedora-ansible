@@ -1,0 +1,15 @@
+{
+  "display_name": "Python 3 (SageMath)",
+  "argv": [
+    "sage",
+    "--python",
+    "-m",
+    "ipykernel",
+    "-c",
+    "%config InlineBackend.figure_formats = set(['retina'])\nimport matplotlib; matplotlib.rcParams['figure.figsize'] = (12, 7)",
+    "--matplotlib=inline",
+    "-f",
+    "{connection_file}"
+  ],
+  "language": "python"
+}

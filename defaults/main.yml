@@ -1,0 +1,14 @@
+---
+cocalc_git_url: "https://github.com/belonesox/cocalc.git"
+cocalc_git_version: "master"
+dbname:  smc
+servername: 'calc'
+basedir: "/var/www/cocalc/"
+cocalc_dns: "cocalc.local.com"
+cocalc_site_name: 'Our CoCalc' 
+cocalc_site_description: '🖩0❌1⚖️📊' 
+cocalc_admin_email: 'stas-fomin@yandex.ru'
+cocalc_admin_first_name: 'Stas'
+cocalc_admin_last_name: 'Fomin'
+
+postgres_smc_pass: "pass17294815162342"
